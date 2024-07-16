@@ -52,6 +52,20 @@ func NewRoles(roles ...Role) Roles {
 	return r
 }
 
+func (roles Roles) Equal(anotherRoles Roles) bool {
+	if len(roles) != len(anotherRoles) {
+		return false
+	}
+
+	for anotherRole := range anotherRoles {
+		if !roles.HasRole(anotherRole) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (roles Roles) HasRole(role Role) bool {
 	_, ok := roles[role]
 	return ok
@@ -59,6 +73,10 @@ func (roles Roles) HasRole(role Role) bool {
 
 func (roles Roles) Add(role Role) {
 	roles[role] = nil
+}
+
+func (roles Roles) Remove(role Role) {
+	delete(roles, role)
 }
 
 func (roles Roles) MarshalText() ([]byte, error) {
@@ -81,7 +99,7 @@ func (roles Roles) MarshalText() ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (roles *Roles) UnmarshalText(text []byte) error {
+func (roles Roles) UnmarshalText(text []byte) error {
 	rolesText := string(text)
 
 	tokens := strings.Split(rolesText, ",")
@@ -92,6 +110,8 @@ func (roles *Roles) UnmarshalText(text []byte) error {
 		if e := r.UnmarshalText([]byte(t)); e != nil {
 			return e
 		}
+
+		roles.Add(r)
 	}
 
 	return nil

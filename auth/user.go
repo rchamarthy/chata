@@ -14,8 +14,8 @@ import (
 )
 
 type User struct {
-	Name  string    `json:"name" yaml:"name"`
 	ID    string    `json:"id" yaml:"name"`
+	Name  string    `json:"name" yaml:"name"`
 	Key   *Identity `json:"key" yaml:"key"`
 	Roles Roles     `json:"roles" yaml:"roles"`
 }
@@ -113,7 +113,7 @@ func LoadUsers(ctx context.Context, userDir string) (Users, error) {
 			})
 
 		if err != nil {
-			fmt.Println(err)
+			chata.Log(ctx).Error("error loading users", "error", err)
 		}
 
 		waitGroup.Wait()
@@ -123,6 +123,7 @@ func LoadUsers(ctx context.Context, userDir string) (Users, error) {
 
 	users := Users{}
 	log := chata.Log(ctx)
+
 	for user := range userChan {
 		if user.e != nil {
 			log.Error("error loading user", "error", user.e)
