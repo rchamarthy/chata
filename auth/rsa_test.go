@@ -346,6 +346,7 @@ func TestLoad(t *testing.T) {
 
 	require.NoError(id.SaveIdentity("new_copy.key"))
 	require.NoError(os.RemoveAll("new_copy.key"))
+	require.Error(id.SaveIdentity("/does-not-exist/abcd"))
 
 	id = auth.EmptyIdentity()
 	require.Error(id.SaveIdentity("/abcd"))
