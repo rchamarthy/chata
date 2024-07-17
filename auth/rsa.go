@@ -29,11 +29,15 @@ type Identity struct {
 	private *rsa.PrivateKey
 }
 
+func PanicOnError(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
 func GenerateIdentity() *Identity {
 	priv, err := rsa.GenerateKey(rand.Reader, RSAKeySize)
-	if err != nil {
-		panic(err)
-	}
+	PanicOnError(err)
 
 	return &Identity{
 		private: priv,
