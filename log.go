@@ -3,23 +3,28 @@ package chata
 import (
 	"context"
 	"io"
-
 	"log/slog"
 )
 
-type LOG_KEY_TYPE string
+type LogKeyType string
 
-const LOG_KEY = LOG_KEY_TYPE("slog")
+const LogKey = LogKeyType("slog")
 
 func Log(ctx context.Context) *slog.Logger {
-	log := ctx.Value(LOG_KEY)
+	log := ctx.Value(LogKey)
 	if log != nil {
-		return log.(*slog.Logger)
+		logger, ok := log.(*slog.Logger)
+
+		if !ok {
+			return NilLogger()
+		}
+
+		return logger
 	}
 
 	return NilLogger()
 }
 
 func NilLogger() *slog.Logger {
-	return slog.New(slog.NewJSONHandler(io.Discard, &slog.HandlerOptions{}))
+	return slog.New(slog.NewJSONHandler(io.Discard, nil))
 }

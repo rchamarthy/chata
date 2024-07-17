@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"os"
 )
 
@@ -55,7 +56,7 @@ func EmptyIdentity() *Identity {
 func LoadIdentity(rsaFile string) (*Identity, error) {
 	rsaText, err := os.ReadFile(rsaFile)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("file read error: %w", err)
 	}
 
 	id := EmptyIdentity()
@@ -72,7 +73,12 @@ func (r *Identity) SaveIdentity(rsaFile string) error {
 		return err
 	}
 
-	return os.WriteFile(rsaFile, data, ReadOnly)
+	err = os.WriteFile(rsaFile, data, ReadOnly)
+	if err != nil {
+		err = fmt.Errorf("error writing file: %w", err)
+	}
+
+	return err
 }
 
 func (r *Identity) MarshalText() ([]byte, error) {

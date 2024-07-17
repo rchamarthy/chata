@@ -3,10 +3,7 @@ run:
 
 linters:
   enable-all: true
-  disable: maligned,golint,scopelint,interfacer,ireturn,wsl
-
-output:
-  format: colored-line-number
+  disable: nlreturn,ireturn,wsl,varnamelen,revive,depguard,err113,gomnd,execinquery,mnd,wrapcheck,gofumpt
 
 linters-settings:
   dupl:

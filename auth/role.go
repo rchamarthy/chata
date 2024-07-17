@@ -2,13 +2,14 @@ package auth
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strings"
 )
 
 type Role int
 
-const MAX_ROLES = 3
+const MaxRoles = 3
 
 const (
 	SELF Role = iota
@@ -22,9 +23,11 @@ func (r Role) MarshalText() ([]byte, error) {
 		return []byte("admin"), nil
 	case CHATTER:
 		return []byte("chatter"), nil
+	case SELF:
+		return nil, errors.New("cannot marshal self role")
 	}
 
-	return nil, fmt.Errorf("unknown role")
+	return nil, errors.New("unknown role")
 }
 
 func (r *Role) UnmarshalText(text []byte) error {
@@ -44,7 +47,7 @@ func (r *Role) UnmarshalText(text []byte) error {
 type Roles map[Role]any
 
 func NewRoles(roles ...Role) Roles {
-	r := make(Roles, MAX_ROLES)
+	r := make(Roles, MaxRoles)
 	for _, role := range roles {
 		r.Add(role)
 	}
@@ -68,6 +71,7 @@ func (roles Roles) Equal(anotherRoles Roles) bool {
 
 func (roles Roles) HasRole(role Role) bool {
 	_, ok := roles[role]
+
 	return ok
 }
 
@@ -82,6 +86,7 @@ func (roles Roles) Remove(role Role) {
 func (roles Roles) MarshalText() ([]byte, error) {
 	b := bytes.Buffer{}
 	i := 0
+	delim := []byte(",")
 	for role := range roles {
 		rb, err := role.MarshalText()
 		if err != nil {
@@ -89,7 +94,7 @@ func (roles Roles) MarshalText() ([]byte, error) {
 		}
 
 		if i != 0 {
-			b.Write([]byte(","))
+			b.Write(delim)
 		}
 
 		b.Write(rb)
