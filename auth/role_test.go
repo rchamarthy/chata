@@ -5,31 +5,33 @@ import (
 
 	"github.com/rchamarthy/chata/auth"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRole(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
+	require := require.New(t)
 
 	b, e := auth.ADMIN.MarshalText()
-	assert.NoError(e)
+	require.NoError(e)
 	assert.Equal("admin", string(b))
 
 	b, e = auth.CHATTER.MarshalText()
-	assert.NoError(e)
+	require.NoError(e)
 	assert.Equal("chatter", string(b))
 
 	b, e = auth.SELF.MarshalText()
-	assert.Error(e)
+	require.Error(e)
 	assert.Empty(b)
 
 	r := auth.SELF
 	e = r.UnmarshalText([]byte("admin"))
-	assert.NoError(e)
+	require.NoError(e)
 	assert.Equal(auth.ADMIN, r)
 
 	e = r.UnmarshalText([]byte("chatter"))
-	assert.NoError(e)
+	require.NoError(e)
 	assert.Equal(auth.CHATTER, r)
 
 	assert.Error(r.UnmarshalText([]byte("unknown bad role")))
@@ -39,6 +41,7 @@ func TestRoles(t *testing.T) {
 	t.Parallel()
 
 	assert := assert.New(t)
+
 	r := auth.NewRoles(auth.ADMIN)
 	assert.NotEmpty(r)
 	assert.True(r.HasRole(auth.ADMIN))
@@ -69,19 +72,20 @@ func TestRolesMarshal(t *testing.T) {
 	t.Parallel()
 
 	assert := assert.New(t)
+	require := require.New(t)
 
 	r := auth.NewRoles(auth.ADMIN, auth.CHATTER)
 	b, e := r.MarshalText()
-	assert.NoError(e)
+	require.NoError(e)
 
 	newRoles := auth.NewRoles()
 	e = newRoles.UnmarshalText(b)
-	assert.NoError(e)
+	require.NoError(e)
 	assert.True(r.Equal(newRoles))
 
 	r.Add(auth.SELF)
 	b, e = r.MarshalText()
-	assert.Error(e)
+	require.Error(e)
 	assert.Nil(b)
 
 	e = r.UnmarshalText([]byte("bad roles"))

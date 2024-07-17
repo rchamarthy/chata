@@ -5,18 +5,20 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/pem"
-	"fmt"
+	"errors"
 	"os"
 	"testing"
 
 	"github.com/rchamarthy/chata/auth"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewIdentity(t *testing.T) {
 	t.Parallel()
 
 	assert := assert.New(t)
+	require := require.New(t)
 
 	henk := auth.GenerateIdentity()
 
@@ -25,37 +27,39 @@ func TestNewIdentity(t *testing.T) {
 
 	b, e := henk.MarshalText()
 	assert.NotNil(b)
-	assert.Nil(e)
-	assert.Nil(henk.UnmarshalText(b))
+	require.NoError(e)
+	require.NoError(henk.UnmarshalText(b))
 
 	x := auth.EmptyIdentity()
 	b, e = x.MarshalText()
 	assert.Nil(b)
-	assert.NotNil(e)
+	require.Error(e)
 
 	e = x.UnmarshalText([]byte("blah"))
-	assert.NotNil(e)
+	require.Error(e)
 
 	henkPub := auth.PubIdentity(henk.PublicKey())
 
 	b, e = henkPub.MarshalText()
-	assert.Nil(e)
+	require.NoError(e)
 	assert.NotNil(b)
-	assert.Nil(x.UnmarshalText(b))
+	require.NoError(x.UnmarshalText(b))
 
 	assert.NotEmpty(henkPub.String())
 
 	henkPub2 := henkPub.Public()
 
 	b, e = henkPub2.MarshalText()
-	assert.Nil(e)
+	require.NoError(e)
 	assert.NotNil(b)
-	assert.Nil(x.UnmarshalText(b))
+	require.NoError(x.UnmarshalText(b))
 }
 
 func TestUnmarshalErrors(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
+	require := require.New(t)
+
 	badType := pem.EncodeToMemory(&pem.Block{
 		Type:    "NULL KEY",
 		Headers: nil,
@@ -82,45 +86,46 @@ func TestUnmarshalErrors(t *testing.T) {
 	x := auth.EmptyIdentity()
 	b, e := x.MarshalText()
 	assert.Nil(b)
-	assert.NotNil(e)
+	require.Error(e)
 
 	henkPub := auth.PubIdentity(henk.PublicKey())
 
 	b, e = henkPub.MarshalText()
-	assert.Nil(e)
+	require.NoError(e)
 	assert.NotNil(b)
-	assert.NotNil(x.UnmarshalText(badPub))
+	require.Error(x.UnmarshalText(badPub))
 
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	henkPriv := auth.NewIdentity(priv)
 
 	b, e = henkPriv.MarshalText()
-	assert.Nil(e)
+	require.NoError(e)
 	assert.NotNil(b)
-	assert.NotNil(x.UnmarshalText(badPriv))
+	require.Error(x.UnmarshalText(badPriv))
 
-	assert.NotNil(x.UnmarshalText(badType))
+	require.Error(x.UnmarshalText(badType))
 }
 
 func TestEncrypt(t *testing.T) {
 	t.Parallel()
 
 	assert := assert.New(t)
+	require := require.New(t)
 
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	henk := auth.NewIdentity(priv)
 
 	priv, err = rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	jaap := auth.NewIdentity(priv)
 
 	priv, err = rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	ingrid := auth.NewIdentity(priv)
 
@@ -129,10 +134,10 @@ func TestEncrypt(t *testing.T) {
 
 	// Lets encrypt it using Ingrid's public key.
 	henksMessage, err := henk.Encrypt(msg, ingrid.PublicKey())
-	assert.Nil(err)
+	require.NoError(err)
 
 	jaapsMessage, err := jaap.Encrypt(msg, ingrid.PublicKey())
-	assert.Nil(err)
+	require.NoError(err)
 
 	// Decrypt
 	hm, _ := ingrid.Decrypt(henksMessage)
@@ -147,35 +152,36 @@ func TestEncryptionNeverTheSame(t *testing.T) {
 	t.Parallel()
 
 	assert := assert.New(t)
+	require := require.New(t)
 
 	// Even when using the same public key, the encrypted messages are never the same
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	henk := auth.NewIdentity(priv)
 
 	priv, err = rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	jaap := auth.NewIdentity(priv)
 
 	priv, err = rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	joop := auth.NewIdentity(priv)
 
 	priv, err = rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	koos := auth.NewIdentity(priv)
 
 	priv, err = rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	kees := auth.NewIdentity(priv)
 
 	priv, err = rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	erik := auth.NewIdentity(priv)
 
@@ -184,7 +190,7 @@ func TestEncryptionNeverTheSame(t *testing.T) {
 	identities := []*auth.Identity{henk, jaap, joop, koos, kees, erik, erik, erik, erik}
 
 	priv, err = rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	ingrid := auth.NewIdentity(priv)
 
@@ -207,14 +213,15 @@ func TestEncryptDecrypt(t *testing.T) {
 	t.Parallel()
 
 	assert := assert.New(t)
+	require := require.New(t)
 
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	henk := auth.NewIdentity(priv)
 
 	priv, err = rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	ingrid := auth.NewIdentity(priv)
 
@@ -222,11 +229,11 @@ func TestEncryptDecrypt(t *testing.T) {
 	msg := []byte("Die uitkeringstrekkers pikken al onze banen in.")
 	// Lets encrypt it, we want to sent it to Ingrid, thus, we use her public key.
 	encryptedMessage, err := henk.Encrypt(msg, ingrid.PublicKey())
-	assert.Nil(err)
+	require.NoError(err)
 
 	// Decrypt Message
 	plainTextMessage, err := ingrid.Decrypt(encryptedMessage)
-	assert.Nil(err)
+	require.NoError(err)
 
 	assert.True(bytes.Equal(plainTextMessage, msg))
 }
@@ -235,11 +242,12 @@ func TestEncryptDecryptMyself(t *testing.T) {
 	t.Parallel()
 
 	assert := assert.New(t)
+	require := require.New(t)
 
 	// If anyone, even you, encrypts (id.e. “locks”) something with your public-key,
 	// only you can decrypt it (id.e. “unlock” it) with your secret, private key.
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	henk := auth.NewIdentity(priv)
 
@@ -248,11 +256,11 @@ func TestEncryptDecryptMyself(t *testing.T) {
 
 	// Lets encrypt it, we want to sent it to self, thus, we need our public key.
 	encryptedMessage, err := henk.Encrypt(msg, nil)
-	assert.Nil(err)
+	require.NoError(err)
 
 	// Decrypt Message
 	plainTextMessage, err := henk.Decrypt(encryptedMessage)
-	assert.Nil(err)
+	require.NoError(err)
 
 	assert.True(bytes.Equal(plainTextMessage, msg))
 }
@@ -261,9 +269,10 @@ func TestSignVerify(t *testing.T) {
 	t.Parallel()
 
 	assert := assert.New(t)
+	require := require.New(t)
 
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	henk := auth.NewIdentity(priv)
 
@@ -278,67 +287,68 @@ func TestSignVerify(t *testing.T) {
 	// now, if the message msg is public, anyone can read it.
 	// the signature sig however, proves this message is from Henk.
 	priv, err = rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	ingrid := auth.NewIdentity(priv)
 
 	priv, err = rsa.GenerateKey(rand.Reader, 2048)
-	assert.Nil(err)
+	require.NoError(err)
 
 	hans := auth.NewIdentity(priv)
 
 	err = ingrid.Verify(msg, sig, henk.PublicKey())
-	assert.Nil(err)
+	require.NoError(err)
 
 	err = hans.Verify(msg, sig, henk.PublicKey())
-	assert.Nil(err)
+	require.NoError(err)
 
 	// Let's see if we can break the signature verification
 	// (1) changing the message
 	err = hans.Verify([]byte("Wilders is een opruier"), sig, henk.PublicKey())
-	assert.NotNil(err)
+	require.Error(err)
 
 	// (2) changing the signature
 	err = hans.Verify(msg, []byte("I am not the signature"), henk.PublicKey())
-	assert.NotNil(err)
+	require.Error(err)
 
 	// (3) changing the public key
 	err = hans.Verify(msg, sig, ingrid.PublicKey())
-	assert.NotNil(err)
+	require.Error(err)
 
 	_, err = ingrid.Public().Sign([]byte("test"))
 	assert.Equal(auth.ErrNoPrivateKey, err)
 
-	assert.Error(hans.Verify(msg, []byte("whatever"), nil))
+	require.Error(hans.Verify(msg, []byte("whatever"), nil))
 }
 
 func TestLoad(t *testing.T) {
 	t.Parallel()
 
 	assert := assert.New(t)
+	require := require.New(t)
 
 	id, err := auth.LoadIdentity("")
 	assert.Nil(id)
-	assert.NotNil(err)
+	require.Error(err)
 
 	id, err = auth.LoadIdentity("rsa_test.go")
 	assert.Nil(id)
-	assert.Error(err)
+	require.Error(err)
 
 	// Generate a key and save it
 	key := auth.GenerateIdentity()
-	assert.Nil(key.SaveIdentity("./test.key"))
+	require.NoError(key.SaveIdentity("./test.key"))
 
 	id, err = auth.LoadIdentity("./test.key")
-	assert.NoError(err)
+	require.NoError(err)
 	assert.NotNil(id)
-	assert.Nil(os.RemoveAll("./test.key"))
+	require.NoError(os.RemoveAll("./test.key"))
 
-	assert.Nil(id.SaveIdentity("new_copy.key"))
-	assert.Nil(os.RemoveAll("new_copy.key"))
+	require.NoError(id.SaveIdentity("new_copy.key"))
+	require.NoError(os.RemoveAll("new_copy.key"))
 
 	id = auth.EmptyIdentity()
-	assert.Error(id.SaveIdentity("/abcd"))
+	require.Error(id.SaveIdentity("/abcd"))
 }
 
 func TestPanicOnError(t *testing.T) {
@@ -346,7 +356,7 @@ func TestPanicOnError(t *testing.T) {
 
 	assert := assert.New(t)
 	assert.Panics(func() {
-		auth.PanicOnError(fmt.Errorf("error"))
+		auth.PanicOnError(errors.New("error"))
 	})
 
 	assert.NotPanics(func() {

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -14,9 +15,9 @@ import (
 )
 
 type User struct {
-	ID    string    `json:"id" yaml:"name"`
-	Name  string    `json:"name" yaml:"name"`
-	Key   *Identity `json:"key" yaml:"key"`
+	ID    string    `json:"id"    yaml:"id"`
+	Name  string    `json:"name"  yaml:"name"`
+	Key   *Identity `json:"key"   yaml:"key"`
 	Roles Roles     `json:"roles" yaml:"roles"`
 }
 
@@ -34,11 +35,15 @@ func NewUser(name string, id string, roles ...Role) *User {
 
 func (user *User) Validate() error {
 	if user.ID == "" {
-		return fmt.Errorf("id cannot be empty")
-	} else if user.Name == "" {
-		return fmt.Errorf("user cannot be empty")
-	} else if user.Key == nil {
-		return fmt.Errorf("user public key cannot be empty")
+		return errors.New("id cannot be empty")
+	}
+
+	if user.Name == "" {
+		return errors.New("user cannot be empty")
+	}
+
+	if user.Key == nil {
+		return errors.New("user public key cannot be empty")
 	}
 
 	return nil
@@ -50,7 +55,7 @@ func LoadUser(userFile string) (*User, error) {
 		return nil, err
 	}
 
-	user := &User{}
+	user := &User{ID: "", Name: "", Key: nil, Roles: nil}
 	if e := yaml.Unmarshal(b, user); e != nil {
 		return nil, e
 	}
@@ -71,7 +76,7 @@ func (user *User) SaveUser(usersDir string) error {
 
 	e = os.WriteFile(userFile, b, 0600)
 	if e != nil {
-		e = fmt.Errorf("error writing user file: %x", e)
+		e = fmt.Errorf("error writing user file: %w", e)
 	}
 
 	return e
@@ -79,7 +84,7 @@ func (user *User) SaveUser(usersDir string) error {
 
 type Users map[string]*User
 
-type user_error struct {
+type userError struct {
 	u *User
 	e error
 }
@@ -94,9 +99,9 @@ func (users Users) Add(user *User) error {
 }
 
 func LoadUsers(ctx context.Context, userDir string) (Users, error) {
-	userChan := make(chan user_error, 16)
+	userChan := make(chan userError, 16)
 
-	go func(channel chan user_error, d string) {
+	go func(channel chan userError, d string) {
 		waitGroup := &sync.WaitGroup{}
 		err := filepath.WalkDir(d,
 			func(p string, d fs.DirEntry, err error) error {
@@ -105,7 +110,7 @@ func LoadUsers(ctx context.Context, userDir string) (Users, error) {
 					defer waitGroup.Done()
 					if d.Type().IsRegular() {
 						u, e := LoadUser(p)
-						channel <- user_error{u, e}
+						channel <- userError{u, e}
 					}
 				}()
 
