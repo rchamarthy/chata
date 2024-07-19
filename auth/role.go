@@ -24,7 +24,7 @@ func (r Role) MarshalText() ([]byte, error) {
 	case CHATTER:
 		return []byte("chatter"), nil
 	case SELF:
-		return nil, errors.New("cannot marshal self role")
+		return []byte("self"), nil
 	}
 
 	return nil, errors.New("unknown role")
@@ -39,15 +39,20 @@ func (r *Role) UnmarshalText(text []byte) error {
 	case "chatter":
 		*r = CHATTER
 		return nil
+	case "self":
+		*r = SELF
+		return nil
 	}
 
 	return fmt.Errorf("unknown role: %s", role)
 }
 
-type Roles map[Role]any
+type Roles struct {
+	roles map[Role]any
+}
 
-func NewRoles(roles ...Role) Roles {
-	r := make(Roles, MaxRoles)
+func NewRoles(roles ...Role) *Roles {
+	r := &Roles{roles: make(map[Role]any)}
 	for _, role := range roles {
 		r.Add(role)
 	}
@@ -55,13 +60,13 @@ func NewRoles(roles ...Role) Roles {
 	return r
 }
 
-func (roles Roles) Equal(anotherRoles Roles) bool {
-	if len(roles) != len(anotherRoles) {
+func (r *Roles) Equal(anotherRoles *Roles) bool {
+	if len(r.roles) != len(anotherRoles.roles) {
 		return false
 	}
 
-	for anotherRole := range anotherRoles {
-		if !roles.HasRole(anotherRole) {
+	for anotherRole := range anotherRoles.roles {
+		if !r.HasRole(anotherRole) {
 			return false
 		}
 	}
@@ -69,25 +74,25 @@ func (roles Roles) Equal(anotherRoles Roles) bool {
 	return true
 }
 
-func (roles Roles) HasRole(role Role) bool {
-	_, ok := roles[role]
+func (r *Roles) HasRole(role Role) bool {
+	_, ok := r.roles[role]
 
 	return ok
 }
 
-func (roles Roles) Add(role Role) {
-	roles[role] = nil
+func (r *Roles) Add(role Role) {
+	r.roles[role] = nil
 }
 
-func (roles Roles) Remove(role Role) {
-	delete(roles, role)
+func (r *Roles) Remove(role Role) {
+	delete(r.roles, role)
 }
 
-func (roles Roles) MarshalText() ([]byte, error) {
+func (r *Roles) MarshalText() ([]byte, error) {
 	b := bytes.Buffer{}
 	i := 0
 	delim := []byte(",")
-	for role := range roles {
+	for role := range r.roles {
 		rb, err := role.MarshalText()
 		if err != nil {
 			return nil, err
@@ -104,19 +109,19 @@ func (roles Roles) MarshalText() ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (roles Roles) UnmarshalText(text []byte) error {
+func (r *Roles) UnmarshalText(text []byte) error {
 	rolesText := string(text)
-
+	r.roles = make(map[Role]any)
 	tokens := strings.Split(rolesText, ",")
 	for _, token := range tokens {
-		r := SELF
+		role := SELF
 		t := strings.TrimSpace(token)
 		t = strings.ToLower(t)
-		if e := r.UnmarshalText([]byte(t)); e != nil {
+		if e := role.UnmarshalText([]byte(t)); e != nil {
 			return e
 		}
 
-		roles.Add(r)
+		r.Add(role)
 	}
 
 	return nil

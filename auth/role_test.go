@@ -22,8 +22,8 @@ func TestRole(t *testing.T) {
 	assert.Equal("chatter", string(b))
 
 	b, e = auth.SELF.MarshalText()
-	require.Error(e)
-	assert.Empty(b)
+	require.NoError(e)
+	assert.Equal("self", string(b))
 
 	r := auth.SELF
 	e = r.UnmarshalText([]byte("admin"))
@@ -34,7 +34,11 @@ func TestRole(t *testing.T) {
 	require.NoError(e)
 	assert.Equal(auth.CHATTER, r)
 
-	assert.Error(r.UnmarshalText([]byte("unknown bad role")))
+	r = auth.Role(10)
+	b, e = r.MarshalText()
+	require.Error(e)
+	require.Nil(b)
+	require.Error(r.UnmarshalText([]byte("unknown bad role")))
 }
 
 func TestRoles(t *testing.T) {
@@ -63,7 +67,7 @@ func TestRoles(t *testing.T) {
 	assert.True(r.HasRole(auth.CHATTER))
 
 	r.Remove(auth.CHATTER)
-	assert.Empty(r)
+	assert.NotEmpty(r)
 	assert.False(r.HasRole(auth.ADMIN))
 	assert.False(r.HasRole(auth.CHATTER))
 }
@@ -84,9 +88,16 @@ func TestRolesMarshal(t *testing.T) {
 	assert.True(r.Equal(newRoles))
 
 	r.Add(auth.SELF)
+	newRoles = auth.NewRoles()
+	b, e = r.MarshalText()
+	require.NoError(e)
+	require.NoError(newRoles.UnmarshalText(b))
+	assert.True(r.Equal(newRoles))
+
+	r = auth.NewRoles(auth.Role(10))
 	b, e = r.MarshalText()
 	require.Error(e)
-	assert.Nil(b)
+	require.Nil(b)
 
 	e = r.UnmarshalText([]byte("bad roles"))
 	assert.Error(e)
@@ -103,4 +114,7 @@ func TestRolesEqual(t *testing.T) {
 
 	anotherRoles = auth.NewRoles(auth.ADMIN)
 	assert.True(roles.Equal(anotherRoles))
+
+	anotherRoles.Add(auth.SELF)
+	assert.False(roles.Equal(anotherRoles))
 }
