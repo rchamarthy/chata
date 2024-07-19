@@ -18,7 +18,7 @@ type User struct {
 	ID    string    `json:"id"    yaml:"id"`
 	Name  string    `json:"name"  yaml:"name"`
 	Key   *Identity `json:"key"   yaml:"key"`
-	Roles Roles     `json:"roles" yaml:"roles"`
+	Roles *Roles    `json:"roles" yaml:"roles"`
 }
 
 func NewUser(name string, id string, roles ...Role) *User {
@@ -55,7 +55,7 @@ func LoadUser(userFile string) (*User, error) {
 		return nil, err
 	}
 
-	user := &User{ID: "", Name: "", Key: nil, Roles: nil}
+	user := &User{ID: "", Name: "", Key: nil, Roles: NewRoles()}
 	if e := yaml.Unmarshal(b, user); e != nil {
 		return nil, e
 	}
@@ -94,7 +94,7 @@ func (users Users) Add(user *User) error {
 		return e
 	}
 
-	users[user.Name] = user
+	users[user.ID] = user
 	return nil
 }
 
@@ -106,15 +106,20 @@ func LoadUsers(ctx context.Context, userDir string) (Users, error) {
 		err := filepath.WalkDir(d,
 			func(p string, d fs.DirEntry, err error) error {
 				waitGroup.Add(1)
-				go func() {
+				go func(p string, f fs.DirEntry) {
 					defer waitGroup.Done()
-					if d.Type().IsRegular() {
+					if err != nil {
+						channel <- userError{nil, err}
+						return
+					}
+
+					if f.Type().IsRegular() {
 						u, e := LoadUser(p)
 						channel <- userError{u, e}
 					}
-				}()
+				}(p, d)
 
-				return nil
+				return err
 			})
 
 		if err != nil {
@@ -129,18 +134,21 @@ func LoadUsers(ctx context.Context, userDir string) (Users, error) {
 	users := Users{}
 	log := chata.Log(ctx)
 
+	var err error
 	for user := range userChan {
 		if user.e != nil {
 			log.Error("error loading user", "error", user.e)
+			err = user.e
 			continue
 		}
 
 		e := users.Add(user.u)
 		if e != nil {
 			log.Error("invalid user", "user", user.u.ID, "error", e)
+			err = e
 			continue
 		}
 	}
 
-	return users, nil
+	return users, err
 }
