@@ -1,16 +1,11 @@
 package auth
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path"
-	"path/filepath"
-	"sync"
 
-	"github.com/rchamarthy/chata"
 	"gopkg.in/yaml.v3"
 )
 
@@ -80,75 +75,4 @@ func (user *User) SaveUser(usersDir string) error {
 	}
 
 	return e
-}
-
-type Users map[string]*User
-
-type userError struct {
-	u *User
-	e error
-}
-
-func (users Users) Add(user *User) error {
-	if e := user.Validate(); e != nil {
-		return e
-	}
-
-	users[user.ID] = user
-	return nil
-}
-
-func LoadUsers(ctx context.Context, userDir string) (Users, error) {
-	userChan := make(chan userError, 16)
-
-	go func(channel chan userError, d string) {
-		waitGroup := &sync.WaitGroup{}
-		err := filepath.WalkDir(d,
-			func(p string, d fs.DirEntry, err error) error {
-				waitGroup.Add(1)
-				go func(p string, f fs.DirEntry) {
-					defer waitGroup.Done()
-					if err != nil {
-						channel <- userError{nil, err}
-						return
-					}
-
-					if f.Type().IsRegular() {
-						u, e := LoadUser(p)
-						channel <- userError{u, e}
-					}
-				}(p, d)
-
-				return err
-			})
-
-		if err != nil {
-			chata.Log(ctx).Error("error loading users", "error", err)
-		}
-
-		waitGroup.Wait()
-
-		close(channel)
-	}(userChan, userDir)
-
-	users := Users{}
-	log := chata.Log(ctx)
-
-	var err error
-	for user := range userChan {
-		if user.e != nil {
-			log.Error("error loading user", "error", user.e)
-			err = user.e
-			continue
-		}
-
-		e := users.Add(user.u)
-		if e != nil {
-			log.Error("invalid user", "user", user.u.ID, "error", e)
-			err = e
-			continue
-		}
-	}
-
-	return users, err
 }
