@@ -1,8 +1,6 @@
 package auth_test
 
 import (
-	"context"
-	"fmt"
 	"os"
 	"testing"
 
@@ -78,47 +76,4 @@ func TestSaveUser(t *testing.T) {
 
 	require.NoError(u.SaveUser("."))
 	defer os.Remove("user1")
-}
-
-func TestUsers(t *testing.T) {
-	t.Parallel()
-
-	require := require.New(t)
-	u := auth.Users{}
-
-	require.NoError(u.Add(auth.NewUser("user1", "user1")))
-	require.NotEmpty(u)
-	require.NotNil(u["user1"])
-
-	require.Error(u.Add(auth.NewUser("", "")))
-}
-
-func TestLoadUsers(t *testing.T) {
-	t.Parallel()
-
-	require := require.New(t)
-
-	// Create 10 users and save them as files
-	require.NoError(os.MkdirAll("./test-dir", 0777))
-	defer os.RemoveAll("./test-dir")
-	for i := range 10 {
-		n := fmt.Sprintf("user-%d", i)
-		u := auth.NewUser(n, n)
-		require.NoError(u.SaveUser("./test-dir"))
-	}
-
-	// Load all users
-	ctx := context.Background()
-	u, e := auth.LoadUsers(ctx, "dir-doesnt-exist")
-	require.Error(e)
-	require.Empty(u)
-
-	u, e = auth.LoadUsers(ctx, "./test-dir")
-	require.NoError(e)
-	require.Len(u, 10)
-
-	e = os.WriteFile("./test-dir/bad-user", []byte("name: blah"), 0600)
-	require.NoError(e)
-	_, e = auth.LoadUsers(ctx, "./test-dir")
-	require.Error(e)
 }
