@@ -13,10 +13,12 @@ func main() {
 
 	server, e := NewServer(os.Args[1])
 	if e != nil {
-		panic(e)
+		fmt.Printf("Server Error: %v\n", e)
+		os.Exit(2)
 	}
 
 	if e := server.Run(); e != nil {
-		panic(e)
+		fmt.Printf("Server Run Error: %v\n", e)
+		os.Exit(3)
 	}
 }

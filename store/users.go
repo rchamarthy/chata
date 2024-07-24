@@ -62,6 +62,7 @@ func (db *UserDB) Destroy() error {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 
+	db.users = Users{}
 	return os.RemoveAll(db.usersDir)
 }
 
@@ -158,4 +159,15 @@ func (db *UserDB) DeleteUser(id string) error {
 
 	delete(db.users, id)
 	return nil
+}
+
+func (db *UserDB) HasUser(id string) bool {
+	return db.GetUser(id) != nil
+}
+
+func (db *UserDB) IsEmpty() bool {
+	db.lock.RLock()
+	defer db.lock.RUnlock()
+
+	return len(db.users) == 0
 }
