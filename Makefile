@@ -18,6 +18,9 @@ server: $(GO_SRC)
 client: $(GO_SRC)
 	cd ./cmd/client && go build -o $(TOP)/build/chata
 
+run-server: server
+	$(TOP)/build/chata-server.bin test.cfg
+
 .PHONY: clean
 clean:
 	rm -rf bin

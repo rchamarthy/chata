@@ -24,9 +24,21 @@ func NewClient() *Client {
 		},
 	}
 
-	c.rootCmd.PersistentFlags().StringP("server", "s", ":8888", "server address")
+	c.rootCmd.PersistentFlags().StringP("server", "s", "http://127.0.0.1:8888", "server address")
 
-	c.rootCmd.AddCommand(registerCmd())
+	userCmd := &cobra.Command{
+		Use:   "user",
+		Short: "chata user management",
+		Long:  "manage the lifecycle of the users",
+	}
+
+	c.rootCmd.AddCommand(userCmd)
+
+	userCmd.AddCommand(registerCmd())
+	userCmd.AddCommand(unregisterCmd())
+	userCmd.AddCommand(listCmd())
+	userCmd.AddCommand(updateCmd())
+
 	return c
 }
 

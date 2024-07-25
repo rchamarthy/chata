@@ -66,6 +66,8 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 	newUser.Roles.Add(auth.CHATTER)
 	newUser.Roles.Add(auth.SELF)
 
+	newUser.Key = newUser.Key.Public()
+
 	err := h.db.Add(newUser)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, UserError{Error: err.Error()})
@@ -144,6 +146,10 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, UserError{Error: err.Error()})
 		return
 	}
+
+	user.Key = user.Key.Public()
+	user.Roles.Add(auth.CHATTER)
+	user.Roles.Add(auth.SELF)
 
 	err := h.db.Add(user)
 	if err != nil {

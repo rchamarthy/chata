@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"path"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/rchamarthy/chata/auth"
@@ -27,6 +29,12 @@ func RegisterUser(cmd *cobra.Command, args []string) error {
 
 	user := auth.NewUser(args[1], args[0])
 
+	if e := saveUser(user); e != nil {
+		return e
+	}
+
+	user.Key = user.Key.Public()
+
 	url := fmt.Sprintf("%s/users/%s", serverAddress, user.ID)
 	client := resty.New()
 	r, err := client.R().SetBody(user).Put(url)
@@ -40,4 +48,18 @@ func RegisterUser(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("user: %s id: %s is registered\n", user.Name, user.ID)
 	return nil
+}
+
+func saveUser(user *auth.User) error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	chatDir := path.Join(home, ".chata")
+	if e := os.MkdirAll(chatDir, 0700); e != nil {
+		return e
+	}
+
+	return user.SaveUser(chatDir)
 }
