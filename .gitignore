@@ -23,4 +23,5 @@ go.work.sum
 coverage.txt
 bin/
 build/
+chata-test/
 *.bin
