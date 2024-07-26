@@ -3,7 +3,7 @@ run:
 
 linters:
   enable-all: true
-  disable: nlreturn,ireturn,wsl,varnamelen,revive,depguard,err113,gomnd,execinquery,mnd,wrapcheck,gofumpt,forbidigo
+  disable: nlreturn,ireturn,wsl,varnamelen,revive,depguard,err113,gomnd,execinquery,mnd,wrapcheck,gofumpt,forbidigo,exhaustruct
 
 linters-settings:
   dupl:

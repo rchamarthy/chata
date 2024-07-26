@@ -13,7 +13,13 @@ lint: ./.golangcilint.yaml
 	$(TOP)/bin/golangci-lint --config ./.golangcilint.yaml run ./...
 
 server: $(GO_SRC)
-	cd ./cmd/server && go build -o $(TOP)/build/chata.bin
+	cd ./cmd/server && go build -o $(TOP)/build/chata-server.bin
+
+client: $(GO_SRC)
+	cd ./cmd/client && go build -o $(TOP)/build/chata
+
+run-server: server
+	$(TOP)/build/chata-server.bin test.cfg
 
 .PHONY: clean
 clean:

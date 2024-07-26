@@ -65,6 +65,7 @@ func TestUserDB(t *testing.T) {
 	db := store.NewUserDB("./test-user-db")
 	require.NotNil(db)
 	require.NoError(db.Init())
+	require.True(db.IsEmpty())
 
 	defer os.RemoveAll("./test-user-db")
 
@@ -72,6 +73,7 @@ func TestUserDB(t *testing.T) {
 	require.NoError(db.Add(auth.NewUser("user1", "user1")))
 	require.NoError(db.Add(auth.NewUser("user2", "user2")))
 	require.Error(db.Add(auth.NewUser("user1", "")))
+	require.False(db.IsEmpty())
 
 	// test GetAllUsers
 	users := db.GetAllUsers()
@@ -82,12 +84,16 @@ func TestUserDB(t *testing.T) {
 	require.NotNil(u)
 	require.Equal("user1", u.Name)
 	require.Equal("user1", u.ID)
+	require.True(db.HasUser("user1"))
 
 	u = db.GetUser("user2")
 	require.NotNil(u)
 	require.Equal("user2", u.Name)
 	require.Equal("user2", u.ID)
+	require.True(db.HasUser("user1"))
+
 	require.Nil(db.GetUser("user3"))
+	require.False(db.HasUser("user3"))
 
 	// Test delete
 	require.NoError(db.DeleteUser("user1"))
@@ -96,4 +102,5 @@ func TestUserDB(t *testing.T) {
 
 	// Test Destroy
 	require.NoError(db.Destroy())
+	require.True(db.IsEmpty())
 }
