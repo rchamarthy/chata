@@ -39,6 +39,8 @@ func NewClient() *Client {
 	userCmd.AddCommand(listCmd())
 	userCmd.AddCommand(updateCmd())
 
+	c.rootCmd.AddCommand(chatCmd())
+
 	return c
 }
 
